@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0a1628">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="БройлерКарта">
+<title>БройлерКарта</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a1628;--bg2:#0f1f3d;--bg3:#162444;--card:#1a2d52;
+  --border:#253d6e;--accent:#f5a623;--accent2:#e8831a;
+  --green:#27c96a;--red:#f0483a;--blue:#4ab3f4;
+  --text:#f0f4ff;--sub:#c4cfdf;--muted:#7890b0;--dim:#4a6080;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--head:'Oswald',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+
+.app-header{background:var(--bg2);border-bottom:2px solid var(--accent);padding:0 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;height:56px}
+.app-logo{font-family:var(--head);font-size:1.3rem;letter-spacing:.08em;color:var(--accent);display:flex;align-items:center;gap:8px}
+.app-logo span{color:var(--text);font-weight:400}
+.header-day{font-family:var(--mono);font-size:.75rem;color:var(--muted);text-align:right}
+.header-day strong{color:var(--accent);font-size:1rem;display:block}
+
+.nav-tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.nav-tabs::-webkit-scrollbar{display:none}
+.tab-btn{flex:0 0 auto;padding:11px 12px;font-family:var(--head);font-size:.72rem;letter-spacing:.05em;color:var(--muted);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;transition:all .2s;white-space:nowrap}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-btn:hover{color:var(--text)}
+
+main{padding:16px;max-width:900px;margin:0 auto}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+.section-title{font-family:var(--head);font-size:1rem;letter-spacing:.1em;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.info-field{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+.info-field label{font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);display:block;margin-bottom:4px}
+.info-field input,.info-field select{width:100%;background:none;border:none;outline:none;color:var(--text);font-family:var(--sans);font-size:.95rem;font-weight:500}
+.info-field input::placeholder{color:var(--muted);font-weight:300}
+.info-field select option{background:var(--card)}
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center}
+.stat-card .stat-val{font-family:var(--mono);font-size:1.2rem;font-weight:500;color:var(--accent);line-height:1}
+.stat-card .stat-lbl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
+.stat-card.green .stat-val{color:var(--green)}
+.stat-card.blue .stat-val{color:var(--blue)}
+.stat-card.red .stat-val{color:var(--red)}
+
+.prog-bar-wrap{margin-bottom:14px}
+.prog-label{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-bottom:5px}
+.prog-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .5s ease}
+.prog-fill.green{background:linear-gradient(90deg,#1db85a,var(--green))}
+
+.day-entry-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px}
+.day-entry-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px}
+.week-badge{font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+.entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.entry-field{position:relative}
+.entry-field label{font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:4px}
+.entry-field input,.entry-field select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:.88rem;outline:none;transition:border-color .2s}
+.entry-field select option{background:var(--bg3)}
+.entry-field input:focus,.entry-field select:focus{border-color:var(--accent)}
+.entry-field .unit{position:absolute;right:10px;bottom:9px;font-size:.68rem;color:var(--muted);pointer-events:none}
+.norm-hint{font-family:var(--mono);font-size:.61rem;color:var(--blue);margin-top:3px}
+.norm-hint.over{color:var(--red)}.norm-hint.ok{color:var(--green)}
+.ctrl-badge{display:inline-block;background:var(--accent);color:var(--bg);font-family:var(--head);font-size:.65rem;letter-spacing:.08em;padding:2px 8px;border-radius:3px;margin-bottom:6px}
+
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px}
+.chart-title{font-family:var(--head);font-size:.75rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+canvas{width:100%!important}
+
+.save-btn{width:100%;padding:13px;background:var(--accent);color:var(--bg);font-family:var(--head);font-size:.88rem;letter-spacing:.1em;border:none;border-radius:6px;cursor:pointer;margin-top:8px;transition:background .2s,transform .1s}
+.save-btn:active{transform:scale(.98)}.save-btn:hover{background:var(--accent2)}
+.save-btn.secondary{background:var(--bg3);color:var(--sub);border:1px solid var(--border)}
+.save-btn.secondary:hover{color:var(--text);border-color:var(--accent)}
+.save-btn.success{background:#1a7a44;color:#fff}
+.save-btn.success:hover{background:#1f9450}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#fff;font-family:var(--sans);font-size:.85rem;padding:10px 20px;border-radius:20px;transition:transform .3s ease;z-index:999;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.summary-item{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px}
+.summary-item .s-label{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.summary-item .s-val{font-family:var(--mono);font-size:1rem;color:var(--text);font-weight:500}
+.summary-item .s-norm{font-size:.65rem;color:var(--muted);margin-top:3px}
+
+/* TABLE */
+.table-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.table-toolbar select{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:6px 10px;color:var(--text);font-family:var(--sans);font-size:.8rem;outline:none}
+.table-toolbar label{font-size:.75rem;color:var(--sub);display:flex;align-items:center;gap:5px;cursor:pointer}
+.table-toolbar input[type=checkbox]{accent-color:var(--accent)}
+.data-table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border);margin-bottom:16px;max-height:70vh;overflow-y:auto}
+.data-table{width:100%;border-collapse:collapse;font-size:.76rem}
+.data-table thead{position:sticky;top:0;z-index:10}
+.data-table thead tr:first-child th{background:#0d1a33;padding:8px 5px 4px;font-family:var(--head);font-size:.63rem;letter-spacing:.06em;color:#adc4e0;border-bottom:1px solid var(--border);white-space:nowrap;text-align:center}
+.data-table thead tr:first-child th.accent{color:var(--accent)}
+.data-table thead tr.subhead th{background:#112140;padding:3px 5px 7px;font-size:.6rem;color:#8baabf;border-bottom:2px solid var(--accent);text-align:center;white-space:nowrap;font-family:var(--sans)}
+.data-table tbody tr{border-bottom:1px solid rgba(37,61,110,.6)}
+.data-table tbody tr:last-child{border-bottom:none}
+.data-table tbody tr:hover td{background:rgba(245,166,35,.05)}
+.data-table tbody tr.has-data td{background:rgba(39,201,106,.025)}
+.data-table tbody tr.week-sep td{border-top:2px solid rgba(245,166,35,.45)}
+.data-table tbody tr.ctrl-row td{background:rgba(245,166,35,.055)}
+.data-table td{padding:5px 5px;text-align:center;font-family:var(--mono);font-size:.74rem;white-space:nowrap;vertical-align:middle;color:var(--sub)}
+.data-table td.day-col{color:var(--accent);font-weight:700;font-size:.86rem}
+.data-table td.week-col{color:#7890b0;font-family:var(--sans);font-size:.66rem;font-weight:600;background:rgba(245,166,35,.04)}
+.data-table td.norm-col{color:var(--blue);font-weight:500}
+.data-table td.fact-col{color:#f0f4ff;font-weight:600}
+.mort-badge{display:inline-block;background:rgba(240,72,58,.22);color:#ff7065;border-radius:3px;padding:1px 5px;font-size:.72rem;font-weight:600}
+.cum-num{color:#d0dff0;font-weight:600}
+.pct-badge{color:#9fb8d0;font-size:.7rem}
+.pct-badge.high{color:var(--red);font-weight:600}
+.delta{display:block;font-size:.6rem;margin-top:1px}
+.delta.pos{color:var(--green)}.delta.neg{color:var(--red)}
+.temp-cell{color:#c4d8f0;font-size:.73rem}
+.ctrl-weigh-cell{color:var(--accent);font-weight:700}
+.ctrl-icon{font-size:.68rem;color:var(--accent)}
+.water-meter{color:#7dd4ff;font-size:.73rem;font-family:var(--mono)}
+.water-cons{color:#f0f4ff;font-weight:600}
+.feed-pill{display:inline-block;border-radius:10px;padding:2px 6px;font-size:.66rem;font-family:var(--sans);font-weight:600;white-space:nowrap}
+.feed-pill.prestart{background:rgba(155,89,182,.25);color:#d8a9f0}
+.feed-pill.starter{background:rgba(74,179,244,.2);color:#7dd4ff}
+.feed-pill.starter2{background:rgba(30,130,230,.3);color:#a8d8ff}
+.feed-pill.grower{background:rgba(39,201,106,.2);color:#5fec94}
+.feed-pill.grower2{background:rgba(20,160,80,.3);color:#8fffc0}
+.feed-pill.finisher{background:rgba(245,166,35,.22);color:#ffc94a}
+.feed-pill.finisher2{background:rgba(220,130,10,.3);color:#ffe090}
+.feed-pill.prestart2{background:rgba(180,100,220,.3);color:#ecc0ff}
+.note-cell{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sans);font-size:.68rem;color:var(--muted);text-align:left;padding-left:6px}
+.data-table tr.week-total td{background:rgba(245,166,35,.09);font-weight:600;font-family:var(--sans);font-size:.7rem;color:var(--accent);border-top:1px solid rgba(245,166,35,.35);border-bottom:1px solid rgba(245,166,35,.35)}
+
+/* FCR PANEL */
+.fcr-panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:18px;margin-bottom:16px}
+.fcr-title{font-family:var(--head);font-size:.9rem;letter-spacing:.1em;color:var(--accent);margin-bottom:14px}
+.fcr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.fcr-field{display:flex;flex-direction:column;gap:4px}
+.fcr-field label{font-size:.63rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.fcr-field input{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:.95rem;outline:none;transition:border-color .2s}
+.fcr-field input:focus{border-color:var(--accent)}
+.fcr-result{background:var(--bg3);border-radius:6px;padding:16px;text-align:center;margin-top:10px}
+.fcr-result .fcr-val{font-family:var(--mono);font-size:2.2rem;font-weight:700;line-height:1}
+.fcr-result .fcr-lbl{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:4px}
+.fcr-result .fcr-grade{font-size:.8rem;margin-top:8px;font-weight:600;padding:4px 14px;border-radius:12px;display:inline-block}
+.fcr-grade.excellent{background:rgba(39,201,106,.2);color:var(--green)}
+.fcr-grade.good{background:rgba(74,179,244,.15);color:var(--blue)}
+.fcr-grade.average{background:rgba(245,166,35,.15);color:var(--accent)}
+.fcr-grade.poor{background:rgba(240,72,58,.15);color:var(--red)}
+.fcr-breakdown{margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.fcr-b-item{background:var(--card);border-radius:5px;padding:10px;text-align:center}
+.fcr-b-item .bv{font-family:var(--mono);font-size:.95rem;font-weight:600;color:var(--text)}
+.fcr-b-item .bl{font-size:.6rem;color:var(--muted);text-transform:uppercase;margin-top:2px}
+
+/* FEED LOG */
+.fc-table{width:100%;border-collapse:collapse;font-size:.79rem}
+.fc-table th{background:var(--bg3);padding:9px 8px;font-family:var(--head);font-size:.63rem;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);text-align:center;white-space:nowrap}
+.fc-table td{padding:7px 8px;border-bottom:1px solid rgba(37,61,110,.5);text-align:center;font-family:var(--mono);font-size:.78rem;vertical-align:middle;color:var(--sub)}
+.fc-table tr:last-child td{border-bottom:none}
+.fc-table tr:hover td{background:rgba(245,166,35,.04)}
+.fc-table td.fc-day{color:var(--accent);font-weight:700}
+.fc-table td.fc-kg{color:#f0f4ff;font-weight:600}
+.fc-table td.fc-cum{color:var(--blue);font-weight:600}
+.fc-table tr.fc-total td{background:rgba(245,166,35,.1);color:var(--accent);font-weight:700;border-top:2px solid rgba(245,166,35,.4)}
+
+/* RECIPES */
+.feed-type-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.ftt-btn{padding:6px 13px;font-family:var(--head);font-size:.72rem;letter-spacing:.05em;border:1px solid var(--border);border-radius:20px;background:var(--bg3);color:var(--muted);cursor:pointer;transition:all .2s;white-space:nowrap}
+.ftt-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(245,166,35,.1)}
+.ftt-btn:hover{color:var(--text)}
+.variant-tabs{display:flex;gap:6px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.var-btn{padding:5px 12px;font-family:var(--mono);font-size:.78rem;border:1px solid var(--border);border-radius:4px;background:var(--bg3);color:var(--muted);cursor:pointer;transition:all .2s}
+.var-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(245,166,35,.1)}
+.add-var-btn{padding:5px 10px;font-family:var(--mono);font-size:.78rem;border:1px dashed var(--border);border-radius:4px;background:none;color:var(--muted);cursor:pointer;transition:all .2s}
+.add-var-btn:hover{border-color:var(--green);color:var(--green)}
+.del-var-btn{padding:5px 10px;font-family:var(--mono);font-size:.78rem;border:1px solid rgba(240,72,58,.3);border-radius:4px;background:none;color:var(--red);cursor:pointer;opacity:.7}
+.del-var-btn:hover{opacity:1}
+.feed-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px;display:none}
+.feed-card.active{display:block}
+.feed-badge{font-family:var(--head);font-size:.8rem;letter-spacing:.1em;padding:4px 14px;border-radius:3px}
+.feed-badge.prestart,.feed-badge.prestart2{background:rgba(155,89,182,.2);color:#d8a9f0;border:1px solid rgba(155,89,182,.35)}
+.feed-badge.starter,.feed-badge.starter2{background:rgba(74,179,244,.2);color:#7dd4ff;border:1px solid rgba(74,179,244,.35)}
+.feed-badge.grower,.feed-badge.grower2{background:rgba(39,201,106,.2);color:#5fec94;border:1px solid rgba(39,201,106,.35)}
+.feed-badge.finisher,.feed-badge.finisher2{background:rgba(245,166,35,.2);color:#ffc94a;border:1px solid rgba(245,166,35,.35)}
+.feed-days{font-family:var(--mono);font-size:.73rem;color:var(--muted);margin-top:5px}
+.ingr-table{width:100%;border-collapse:collapse;margin-bottom:12px}
+.ingr-table th{background:var(--bg3);padding:8px 10px;font-family:var(--head);font-size:.63rem;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);text-align:center}
+.ingr-table th:first-child{text-align:left;padding-left:12px}
+.ingr-table td{padding:7px 10px;border-bottom:1px solid rgba(37,61,110,.5);vertical-align:middle}
+.ingr-table tr:last-child td{border-bottom:none}
+.ingr-table td:first-child{font-weight:600;font-size:.88rem;color:var(--text);padding-left:12px}
+.ingr-inp{width:90px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 8px;color:var(--text);font-family:var(--mono);font-size:.88rem;text-align:center;outline:none;transition:border-color .2s;display:block;margin:0 auto}
+.ingr-inp:focus{border-color:var(--accent)}
+.ingr-unit{font-size:.68rem;color:var(--muted);text-align:center;margin-top:2px}
+.feed-total-box{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--bg3);border-radius:5px;margin-bottom:12px;border:1px solid var(--border)}
+.feed-total-box .tot-lbl{font-size:.78rem;color:var(--muted)}
+.tot-val{font-family:var(--mono);font-size:1rem;font-weight:700}
+.tot-val.ok{color:var(--green)}.tot-val.warn{color:var(--red)}.tot-val.neutral{color:var(--sub)}
+
+.norms-table{width:100%;border-collapse:collapse}
+.norms-table th,.norms-table td{padding:7px 10px;text-align:center;font-size:.75rem;border-bottom:1px solid var(--border)}
+.norms-table th{font-family:var(--head);font-size:.63rem;letter-spacing:.07em;color:var(--muted);background:var(--bg3)}
+.norms-table td{font-family:var(--mono);color:var(--sub)}
+.norms-table tr:last-child td{border-bottom:none}
+
+.install-prompt{background:var(--bg3);border:1px solid var(--accent);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.install-prompt p{font-size:.8rem;color:var(--text);flex:1}
+.install-prompt button{background:var(--accent);color:var(--bg);border:none;border-radius:4px;padding:7px 14px;font-family:var(--head);font-size:.75rem;cursor:pointer;white-space:nowrap}
+.install-prompt .close-btn{background:none;color:var(--muted);font-size:1.1rem;padding:4px 8px}
+#installBanner{display:none}
+
+@media(min-width:600px){
+  .info-grid{grid-template-columns:repeat(3,1fr)}
+  .entry-grid{grid-template-columns:repeat(3,1fr)}
+  .stats-row{grid-template-columns:repeat(5,1fr)}
+  .summary-grid{grid-template-columns:repeat(4,1fr)}
+  .fcr-grid{grid-template-columns:repeat(3,1fr)}
+  .fcr-breakdown{grid-template-columns:repeat(5,1fr)}
+}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="app-logo">🐔 <span>Бройлер<strong>Карта</strong></span></div>
+  <div class="header-day" id="headerDay"><strong>—</strong>день</div>
+</header>
+<nav class="nav-tabs">
+  <button class="tab-btn active"  onclick="switchTab('dashboard',this)">📊 Дашборд</button>
+  <button class="tab-btn"         onclick="switchTab('daily',this)">📝 Щоденник</button>
+  <button class="tab-btn"         onclick="switchTab('table',this)">📋 Таблиця</button>
+  <button class="tab-btn"         onclick="switchTab('feedlog',this)">🌽 Корм</button>
+  <button class="tab-btn"         onclick="switchTab('feed',this)">⚙️ Рецептури</button>
+  <button class="tab-btn"         onclick="switchTab('norms',this)">📐 Норми</button>
+</nav>
+<main>
+<div class="install-prompt" id="installBanner">
+  <p>📱 Встановіть на головний екран</p>
+  <button id="installBtn">Встановити</button>
+  <button class="close-btn" onclick="document.getElementById('installBanner').style.display='none'">✕</button>
+</div>
+
+<!-- DASHBOARD -->
+<div class="tab-panel active" id="tab-dashboard">
+  <div class="section-title">ПАРТІЯ / ПТАШНИК</div>
+  <div class="info-grid">
+    <div class="info-field"><label>Пташник №</label><input id="f_barn" type="text" placeholder="П-1"></div>
+    <div class="info-field"><label>Дата посадки</label><input id="f_date" type="date"></div>
+    <div class="info-field"><label>Поголів'я</label><input id="f_flock" type="number" placeholder="Голів"></div>
+    <div class="info-field"><label>Кросс</label><input id="f_cross" type="text" placeholder="Ross 308"></div>
+    <div class="info-field"><label>Відповідальний</label><input id="f_resp" type="text" placeholder="ПІБ"></div>
+    <div class="info-field"><label>День забою</label><input id="f_slday" type="number" placeholder="42" value="42"></div>
+  </div>
+  <div class="section-title">СТАН ПАРТІЇ</div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-val" id="s_day">0</div><div class="stat-lbl">День</div></div>
+    <div class="stat-card green"><div class="stat-val" id="s_surv">—</div><div class="stat-lbl">Виживаність</div></div>
+    <div class="stat-card blue"><div class="stat-val" id="s_weight">—</div><div class="stat-lbl">Вага г</div></div>
+    <div class="stat-card"><div class="stat-val" id="s_water">—</div><div class="stat-lbl">Вода л/добу</div></div>
+    <div class="stat-card red"><div class="stat-val" id="s_total_mort">0</div><div class="stat-lbl">Падіж заг.</div></div>
+  </div>
+  <div class="section-title">ПРОГРЕС</div>
+  <div class="prog-bar-wrap">
+    <div class="prog-label"><span>День вирощування</span><span id="progDayLabel">0 / 42</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="progDay" style="width:0%"></div></div>
+  </div>
+  <div class="prog-bar-wrap">
+    <div class="prog-label"><span>Відповідність нормам ваги</span><span id="progWLabel">—</span></div>
+    <div class="prog-bar"><div class="prog-fill green" id="progW" style="width:0%"></div></div>
+  </div>
+  <div class="section-title">ГРАФІКИ</div>
+  <div class="chart-wrap">
+    <div class="chart-title">Жива маса (г) — факт vs норма</div>
+    <canvas id="chartWeight" height="180"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-title">Споживання води (л/добу)</div>
+    <canvas id="chartWater" height="160"></canvas>
+  </div>
+  <div class="section-title">FCR — КОНВЕРСІЯ КОРМУ</div>
+  <div id="dashFcr" style="margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px" id="dashFcrStats"></div>
+    <div class="chart-wrap" id="dashFcrChartWrap" style="display:none">
+      <div class="chart-title">FCR по тижнях (наростаючий)</div>
+      <canvas id="chartFCR" height="160"></canvas>
+    </div>
+  </div>
+  <button class="save-btn" onclick="saveFarmInfo()">💾 ЗБЕРЕГТИ НАЛАШТУВАННЯ</button>
+</div>
+
+<!-- DAILY -->
+<div class="tab-panel" id="tab-daily">
+  <div class="section-title">ВВІД ДАНИХ ЗА ДЕНЬ</div>
+  <div class="day-entry-card">
+    <div class="day-entry-header">
+      <button onclick="stepDay(-1)" style="background:var(--bg3);border:1px solid var(--border);color:var(--sub);border-radius:4px;padding:6px 10px;font-size:1.1rem;cursor:pointer;line-height:1;transition:all .15s" title="Попередній день">◀</button>
+      <select id="daySelect" onchange="loadDayForm()"
+        style="background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:.85rem;padding:6px 10px;border-radius:4px;outline:none;flex:1;min-width:0"></select>
+      <button onclick="stepDay(1)" style="background:var(--bg3);border:1px solid var(--border);color:var(--sub);border-radius:4px;padding:6px 10px;font-size:1.1rem;cursor:pointer;line-height:1;transition:all .15s" title="Наступний день">▶</button>
+      <div class="week-badge" id="weekLabel">—</div>
+    </div>
+    <div id="ctrlWeighBanner" style="display:none;margin-bottom:12px">
+      <div class="ctrl-badge">⚖️ КОНТРОЛЬНЕ ЗВАЖУВАННЯ</div>
+      <div style="font-size:.75rem;color:var(--sub);margin-top:4px">Обов'язковий день зважування. Вкажіть фактичну середню масу.</div>
+    </div>
+    <div class="entry-grid">
+      <div class="entry-field">
+        <label>Падіж за добу (гол.)</label>
+        <input type="number" id="e_mort" placeholder="0" min="0">
+      </div>
+      <div class="entry-field">
+        <label>Комбікорм</label>
+        <select id="e_feed_type" onchange="onFeedTypeChange()">
+          <option value="">— оберіть —</option>
+        </select>
+        <div class="norm-hint" id="nh_feed"></div>
+      </div>
+      <div class="entry-field">
+        <label>Вага корму (кг)</label>
+        <input type="number" id="e_feed_w" placeholder="0.0" step="0.1" min="0">
+        <div class="unit">кг</div>
+      </div>
+      <div class="entry-field">
+        <label>Лічильник води (м³)</label>
+        <input type="number" id="e_water_meter" placeholder="0.000" step="0.001" min="0">
+        <div class="unit">м³</div>
+        <div class="norm-hint" id="nh_meter"></div>
+      </div>
+      <div class="entry-field">
+        <label>Середня маса (г)</label>
+        <input type="number" id="e_weight" placeholder="0" min="0" oninput="updateNormHints()">
+        <div class="unit">г</div>
+        <div class="norm-hint" id="nh_weight"></div>
+      </div>
+      <div class="entry-field" id="field_ctrl_weight" style="display:none">
+        <label>⚖️ Контрольне зважування (г)</label>
+        <input type="number" id="e_ctrl_weight" placeholder="0" min="0" oninput="syncCtrlWeight()">
+        <div class="unit">г</div>
+        <div class="norm-hint" id="nh_ctrl"></div>
+      </div>
+      <div class="entry-field">
+        <label>Температура 08:00 (°C)</label>
+        <input type="number" id="e_temp8" placeholder="0" step="0.5">
+        <div class="norm-hint" id="nh_temp"></div>
+      </div>
+      <div class="entry-field">
+        <label>Температура 18:00 (°C)</label>
+        <input type="number" id="e_temp18" placeholder="0" step="0.5">
+      </div>
+    </div>
+    <div class="entry-field" style="margin-top:10px">
+      <label>Примітки</label>
+      <input type="text" id="e_note" placeholder="Вакцинація, лікування, спостереження...">
+    </div>
+    <button class="save-btn" style="margin-top:14px" onclick="saveDayData()">✅ ЗБЕРЕГТИ ДЕНЬ</button>
+  </div>
+  <div class="section-title" id="summaryTitle" style="display:none">ПІДСУМОК ДНЯ</div>
+  <div class="summary-grid" id="summaryGrid" style="display:none"></div>
+</div>
+
+<!-- TABLE -->
+<div class="tab-panel" id="tab-table">
+  <div class="section-title">ЖУРНАЛ ВИРОЩУВАННЯ</div>
+  <div class="table-toolbar">
+    <label>Тиждень:</label>
+    <select id="filterWeek" onchange="buildTable()">
+      <option value="0">Всі</option>
+      <option value="1">Тиж. 1</option><option value="2">Тиж. 2</option>
+      <option value="3">Тиж. 3</option><option value="4">Тиж. 4</option>
+      <option value="5">Тиж. 5</option><option value="6">Тиж. 6</option>
+      <option value="7">Тиж. 7</option><option value="8">Тиж. 8</option>
+    </select>
+    <label><input type="checkbox" id="showOnlyFilled" onchange="buildTable()"> Лише заповнені</label>
+  </div>
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th rowspan="2" class="accent">День</th>
+          <th rowspan="2">Тиж.</th>
+          <th colspan="3">ПАДІЖ</th>
+          <th colspan="2">ВАГА, г</th>
+          <th rowspan="2" style="color:var(--accent)">⚖️</th>
+          <th colspan="3">ВОДА</th>
+          <th colspan="2">ТЕМП, °C</th>
+          <th rowspan="2">Корм</th>
+          <th rowspan="2">кг</th>
+          <th rowspan="2">Примітки</th>
+        </tr>
+        <tr class="subhead">
+          <th>Добу</th><th>Нарост.</th><th>%</th>
+          <th>Норма</th><th>Факт/Δ</th>
+          <th>Лічильник</th><th>Спожито л</th><th>мл/гол</th>
+          <th>08:00</th><th>18:00</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+  <button class="save-btn secondary" onclick="exportCSV()">⬇ ЕКСПОРТ CSV</button>
+</div>
+
+<!-- FEED LOG -->
+<div class="tab-panel" id="tab-feedlog">
+  <div class="section-title">СПОЖИТИЙ КОМБІКОРМ</div>
+  <div id="feedLogStats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px"></div>
+  <div class="data-table-wrap">
+    <table class="fc-table">
+      <thead>
+        <tr>
+          <th>День</th><th>Тиж.</th><th>Рецептура</th>
+          <th>кг/добу</th><th>Нарост. кг</th><th>г/голову</th><th>Примітки</th>
+        </tr>
+      </thead>
+      <tbody id="fcBody"></tbody>
+    </table>
+  </div>
+  <button class="save-btn secondary" onclick="exportFeedCSV()">⬇ ЕКСПОРТ CSV</button>
+</div>
+
+<!-- FCR -->
+<div class="tab-panel" id="tab-fcr">
+  <div class="section-title">РОЗРАХУНОК FCR</div>
+  <div class="fcr-panel">
+    <div class="fcr-title">📊 Коефіцієнт конверсії корму (FCR = витрати корму / приріст маси)</div>
+    <div class="fcr-grid">
+      <div class="fcr-field">
+        <label>Загальний корм (кг)</label>
+        <input type="number" id="fcr_feed" placeholder="0" step="0.1" oninput="calcFCR()">
+      </div>
+      <div class="fcr-field">
+        <label>Початкова маса стада (кг)</label>
+        <input type="number" id="fcr_start_mass" placeholder="0" step="0.1" oninput="calcFCR()">
+      </div>
+      <div class="fcr-field">
+        <label>Фінальна маса стада (кг)</label>
+        <input type="number" id="fcr_end_mass" placeholder="0" step="0.1" oninput="calcFCR()">
+      </div>
+      <div class="fcr-field">
+        <label>Голів на початку</label>
+        <input type="number" id="fcr_start_flock" placeholder="0" oninput="calcFCR()">
+      </div>
+      <div class="fcr-field">
+        <label>Голів на забій</label>
+        <input type="number" id="fcr_end_flock" placeholder="0" oninput="calcFCR()">
+      </div>
+      <div class="fcr-field">
+        <label>Днів вирощування</label>
+        <input type="number" id="fcr_days" placeholder="42" oninput="calcFCR()">
+      </div>
+    </div>
+    <button class="save-btn" onclick="autoFillFCR()" style="margin-bottom:8px">⚡ ЗАПОВНИТИ З ДАНИХ ПАРТІЇ</button>
+    <div id="fcrResult" style="display:none">
+      <div class="fcr-result">
+        <div class="fcr-val" id="fcrValue">—</div>
+        <div class="fcr-lbl">FCR</div>
+        <div class="fcr-grade" id="fcrGrade">—</div>
+      </div>
+      <div class="fcr-breakdown" id="fcrBreakdown"></div>
+    </div>
+  </div>
+  <div class="fcr-panel">
+    <div class="fcr-title">📋 Орієнтири FCR для бройлерів Ross 308</div>
+    <table class="norms-table">
+      <thead><tr><th>Тиждень</th><th>Вік (дні)</th><th>Відмінно</th><th>Добре</th><th>Задовільно</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>7</td><td style="color:var(--green)">&lt; 0.90</td><td style="color:var(--blue)">0.90–1.00</td><td style="color:var(--accent)">&gt; 1.00</td></tr>
+        <tr><td>2</td><td>14</td><td style="color:var(--green)">&lt; 1.10</td><td style="color:var(--blue)">1.10–1.25</td><td style="color:var(--accent)">&gt; 1.25</td></tr>
+        <tr><td>3</td><td>21</td><td style="color:var(--green)">&lt; 1.30</td><td style="color:var(--blue)">1.30–1.45</td><td style="color:var(--accent)">&gt; 1.45</td></tr>
+        <tr><td>4</td><td>28</td><td style="color:var(--green)">&lt; 1.50</td><td style="color:var(--blue)">1.50–1.65</td><td style="color:var(--accent)">&gt; 1.65</td></tr>
+        <tr><td>5</td><td>35</td><td style="color:var(--green)">&lt; 1.65</td><td style="color:var(--blue)">1.65–1.80</td><td style="color:var(--accent)">&gt; 1.80</td></tr>
+        <tr><td>6</td><td>42</td><td style="color:var(--green)">&lt; 1.75</td><td style="color:var(--blue)">1.75–1.90</td><td style="color:var(--accent)">&gt; 1.90</td></tr>
+        <tr><td>7</td><td>49</td><td style="color:var(--green)">&lt; 1.85</td><td style="color:var(--blue)">1.85–2.00</td><td style="color:var(--accent)">&gt; 2.00</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- FEED RECIPES -->
+<div class="tab-panel" id="tab-feed">
+  <div class="section-title">РЕЦЕПТУРИ КОМБІКОРМІВ</div>
+  <p style="font-size:.82rem;color:var(--sub);margin-bottom:14px;line-height:1.5">
+    Для кожного виду комбікорму можна створити кілька варіантів рецептури.<br>
+    Вага інгредієнтів на партію <strong style="color:var(--accent)">5.000 т</strong>.
+  </p>
+  <div class="feed-type-tabs" id="feedTypeTabs"></div>
+  <div id="feedRecipeArea"></div>
+</div>
+
+<!-- NORMS -->
+<div class="tab-panel" id="tab-norms">
+  <div class="section-title">ДОВІДНИК НОРМ — ROSS 308</div>
+  <div class="chart-wrap">
+    <div class="chart-title">Нормативна жива маса (г)</div>
+    <canvas id="chartNorm" height="180"></canvas>
+  </div>
+  <div class="data-table-wrap">
+    <table class="norms-table">
+      <thead><tr><th>Тиж.</th><th>День</th><th>Вода мл/гол</th><th>Вага норма г</th><th>Темп °C</th></tr></thead>
+      <tbody id="normsBody"></tbody>
+    </table>
+  </div>
+</div>
+</main>
+<div class="toast" id="toast">Збережено ✓</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// ══ NORMS ══
+const NORMS=[
+  [0,0,42,34,1],[1,21,56,33,1],[2,29,72,32,1],[3,34,89,31,1],
+  [4,39,109,30,1],[5,45,132,29.5,1],[6,53,157,29,1],[7,59,185,28.5,1],
+  [8,66,217,28,2],[9,72,251,27.5,2],[10,82,289,27,2],[11,91,330,26.5,2],
+  [12,98,375,26,2],[13,108,422,25.5,2],[14,118,473,25,2],
+  [15,126,527,25,3],[16,137,585,24.5,3],[17,146,645,24.5,3],[18,157,709,24,3],
+  [19,168,775,24,3],[20,176,844,23.5,3],[21,187,916,23.5,3],
+  [22,197,990,23,4],[23,207,1066,23,4],[24,218,1145,22.5,4],[25,228,1226,22.5,4],
+  [26,238,1309,22,4],[27,246,1393,22,4],[28,257,1479,21.5,4],
+  [29,268,1567,21.5,5],[30,276,1656,21,5],[31,284,1746,21,5],[32,292,1836,20.5,5],
+  [33,302,1928,20.5,5],[34,310,2020,20,5],[35,316,2113,20,5],
+  [36,325,2207,20,6],[37,332,2300,20,6],[38,338,2394,19.5,6],[39,345,2488,19.5,6],
+  [40,352,2581,19,6],[41,357,2675,19,6],[42,363,2768,19,6],
+  [43,370,2861,19,7],[44,375,2954,19,7],[45,380,3046,19,7],[46,null,3137,null,7],
+  [47,null,3228,null,7],[48,null,3318,null,7],[49,null,3407,null,7],
+  [50,null,3495,null,8],[51,null,3582,null,8],[52,null,3669,null,8],[53,null,3754,null,8],
+  [54,null,3838,null,8],[55,null,3920,null,8],[56,null,4002,null,8],
+];
+function getNorm(d){return NORMS.find(r=>r[0]===d)||null}
+const CTRL_DAYS=new Set([0,7,14,21,28,35,42,49]);
+
+// ══ FEED TYPES & VARIANTS ══
+// feedKey = e.g. 'starter', 'starter2', 'grower', 'grower2'
+// Base types and their display info
+const FEED_BASE_TYPES=[
+  {key:'prestart', label:'Предстарт', days:'0–7',   color:'prestart'},
+  {key:'starter',  label:'Стартер',   days:'8–21',  color:'starter'},
+  {key:'grower',   label:'Гровер',    days:'22–35', color:'grower'},
+  {key:'finisher', label:'Фінішер',   days:'36+',   color:'finisher'},
+];
+const FEED_INGREDIENTS=['Кукурудза','Пшениця','Макуха','Крейда','Олія','Премікс'];
+const DEFAULT_RECIPE_WEIGHTS={
+  prestart:{Кукурудза:2.250,Пшениця:1.500,Макуха:0.900,Крейда:0.060,Олія:0.100,Премікс:0.190},
+  starter: {Кукурудза:2.500,Пшениця:1.300,Макуха:0.800,Крейда:0.065,Олія:0.150,Премікс:0.185},
+  grower:  {Кукурудза:2.750,Пшениця:1.200,Макуха:0.650,Крейда:0.070,Олія:0.200,Премікс:0.130},
+  finisher:{Кукурудза:3.000,Пшениця:1.100,Макуха:0.500,Крейда:0.070,Олія:0.250,Премікс:0.080},
+};
+const TARGET_TONS=5.0;
+
+function getBaseType(key){return key.replace(/\d+$/,'')}
+function getVariantNum(key){const m=key.match(/(\d+)$/);return m?parseInt(m[1]):1}
+function makeVariantKey(base,n){return n===1?base:base+n}
+
+// ══ STATE ══
+let state={
+  barn:'',placeDate:'',flock:0,cross:'Ross 308',resp:'',slDay:42,
+  days:{},
+  // feedRecipes: { 'starter':{ Кукурудза:2.5, ...}, 'starter2':{...}, ... }
+  feedRecipes:{},
+  // feedVariants: { 'starter':2, 'grower':1, ... } — how many variants per base type
+  feedVariants:{prestart:1,starter:1,grower:1,finisher:1},
+};
+
+function getDefaultRecipeForKey(key){
+  const base=getBaseType(key);
+  return JSON.parse(JSON.stringify(DEFAULT_RECIPE_WEIGHTS[base]||DEFAULT_RECIPE_WEIGHTS.starter));
+}
+function ensureRecipe(key){
+  if(!state.feedRecipes[key])state.feedRecipes[key]=getDefaultRecipeForKey(key);
+}
+function getAllVariantKeys(){
+  const keys=[];
+  FEED_BASE_TYPES.forEach(bt=>{
+    const n=state.feedVariants[bt.key]||1;
+    for(let i=1;i<=n;i++)keys.push(makeVariantKey(bt.key,i));
+  });
+  return keys;
+}
+function getFeedLabel(key){
+  const base=getBaseType(key);
+  const bt=FEED_BASE_TYPES.find(b=>b.key===base);
+  const n=getVariantNum(key);
+  const baseName=bt?bt.label:base;
+  return n===1?baseName:baseName+' '+n;
+}
+
+function saveState(){localStorage.setItem('broilerState4',JSON.stringify(state))}
+function loadState(){
+  const raw=localStorage.getItem('broilerState4')
+    ||localStorage.getItem('broilerState3')
+    ||localStorage.getItem('broilerState2')
+    ||localStorage.getItem('broilerState');
+  if(raw){
+    try{
+      const p=JSON.parse(raw);
+      // migrate days
+      if(p.days){
+        Object.keys(p.days).forEach(k=>{
+          if(p.days[k].ctrlWeight===undefined)p.days[k].ctrlWeight='';
+          if(p.days[k].waterMeter===undefined)p.days[k].waterMeter='';
+          // migrate old water field to waterMeter if it looked like a meter reading
+          if(!p.days[k].waterMeter&&p.days[k].water&&parseFloat(p.days[k].water)>1000){
+            // old data was mL/head — keep as-is, don't migrate
+          }
+        });
+      }
+      // migrate old feedRecipes array format to object
+      if(p.feedRecipes&&!Array.isArray(p.feedRecipes)&&typeof p.feedRecipes==='object'){
+        // check if it's old format (keys are base types with array values)
+        const first=Object.values(p.feedRecipes)[0];
+        if(Array.isArray(first)){
+          // old array format — ignore, use defaults
+          p.feedRecipes={};
+        }
+      }
+      state={...state,...p};
+      if(!state.feedVariants)state.feedVariants={prestart:1,starter:1,grower:1,finisher:1};
+      if(!state.feedRecipes||typeof state.feedRecipes!=='object')state.feedRecipes={};
+      // ensure all variant recipes exist
+      getAllVariantKeys().forEach(k=>ensureRecipe(k));
+    }catch(e){console.warn('State load error',e)}
+  }
+  document.getElementById('f_barn').value =state.barn||'';
+  document.getElementById('f_date').value =state.placeDate||'';
+  document.getElementById('f_flock').value=state.flock||'';
+  document.getElementById('f_cross').value=state.cross||'Ross 308';
+  document.getElementById('f_resp').value =state.resp||'';
+  document.getElementById('f_slday').value=state.slDay||42;
+}
+function saveFarmInfo(){
+  state.barn=document.getElementById('f_barn').value;
+  state.placeDate=document.getElementById('f_date').value;
+  state.flock=parseInt(document.getElementById('f_flock').value)||0;
+  state.cross=document.getElementById('f_cross').value;
+  state.resp=document.getElementById('f_resp').value;
+  state.slDay=parseInt(document.getElementById('f_slday').value)||42;
+  saveState();showToast('Налаштування збережено ✓');updateDashboard();
+}
+
+// ══ TABS ══
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='table')     buildTable();
+  if(id==='norms')     {buildNormsTable();drawNormChart();}
+  if(id==='daily')     {buildDaySelect();buildFeedTypeSelect();}
+  if(id==='feed')      renderFeedRecipesUI();
+  if(id==='feedlog')   buildFeedLog();
+  if(id==='dashboard') updateDashboard();
+}
+
+// ══ UTILS ══
+function currentDay(){
+  if(!state.placeDate)return 0;
+  return Math.max(0,Math.min(Math.floor((Date.now()-new Date(state.placeDate))/86400000),56));
+}
+function weekOf(d){return Math.ceil((d+1)/7)||1}
+function showToast(msg,color){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.background=color||'var(--green)';
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);
+}
+function dim(v){return v||'<span style="color:var(--dim)">—</span>'}
+function feedPill(key){
+  if(!key)return dim('');
+  return`<span class="feed-pill ${key}">${getFeedLabel(key)}</span>`;
+}
+
+// ══ WATER CONSUMPTION ══
+// Returns liters consumed on day d = meter[d] - meter[d-1]
+// Searches strictly for the immediately preceding day that has a meter reading.
+// This ensures: day2 - day1, day3 - day2, day4 - day3, etc.
+function getWaterConsumedL(d){
+  const ddCur=state.days[d];
+  if(!ddCur||ddCur.waterMeter===undefined||ddCur.waterMeter==='')return null;
+  const cur=parseFloat(ddCur.waterMeter);
+  if(isNaN(cur)||cur<=0)return null;
+  // Find the closest previous day (by day number) with a valid meter reading
+  let prev=null;
+  for(let i=d-1;i>=0;i--){
+    const ddPrev=state.days[i];
+    if(ddPrev&&ddPrev.waterMeter!==undefined&&ddPrev.waterMeter!==''){
+      const v=parseFloat(ddPrev.waterMeter);
+      if(!isNaN(v)&&v>=0){prev=v;break;}
+    }
+  }
+  if(prev===null)return null;
+  const diff=(cur-prev)*1000; // m³ → liters
+  return diff>0?diff:null;
+}
+
+// ══ DASHBOARD ══
+function updateDashboard(){
+  const day=currentDay(),slDay=state.slDay||42;
+  document.getElementById('s_day').textContent=day;
+  document.getElementById('headerDay').innerHTML=`<strong>${day}</strong>день`;
+  document.getElementById('progDayLabel').textContent=`${day} / ${slDay}`;
+  document.getElementById('progDay').style.width=Math.min(100,(day/slDay)*100)+'%';
+  let totMort=0;
+  Object.values(state.days).forEach(d=>{totMort+=parseInt(d.mort)||0});
+  document.getElementById('s_total_mort').textContent=totMort;
+  const fl=state.flock||0;
+  if(fl>0)document.getElementById('s_surv').textContent=((fl-totMort)/fl*100).toFixed(1)+'%';
+  const dd=state.days[day]||null;
+  const norm=getNorm(day);
+  if(dd?.weight)document.getElementById('s_weight').textContent=dd.weight;
+  else if(norm)document.getElementById('s_weight').textContent=norm[2];
+  const wL=getWaterConsumedL(day);
+  if(wL!==null)document.getElementById('s_water').textContent=wL.toFixed(0);
+  if(norm&&norm[2]){
+    const fw=dd?.weight?parseInt(dd.weight):norm[2];
+    const pct=Math.min(150,(fw/norm[2]*100)).toFixed(0);
+    document.getElementById('progWLabel').textContent=pct+'%';
+    document.getElementById('progW').style.width=Math.min(100,pct)+'%';
+  }
+  drawWeightChart();drawWaterChart();
+  calcLiveFCR();
+}
+
+// ══ LIVE FCR CALC (from table data + weekly weighings) ══
+let chartFCR=null;
+function calcLiveFCR(){
+  const fl=state.flock||0;
+  const statsEl=document.getElementById('dashFcrStats');
+  const chartWrap=document.getElementById('dashFcrChartWrap');
+  if(!statsEl)return;
+
+  // Total feed consumed
+  let totFeed=0,totMort=0;
+  NORMS.forEach(nr=>{
+    const dd=state.days[nr[0]]||{};
+    totFeed+=parseFloat(dd.feedW)||0;
+    totMort+=parseInt(dd.mort)||0;
+  });
+
+  // Collect weekly FCR data points using ctrl weighings (days 0,7,14,21,28,35,42,49)
+  const ctrlPoints=[];
+  let cumFeedAtCtrl=0,cumMortAtCtrl=0;
+  const sortedCtrl=Array.from(CTRL_DAYS).sort((a,b)=>a-b);
+  let feedCumByDay={};
+  let runFeed=0;
+  NORMS.forEach(nr=>{runFeed+=parseFloat((state.days[nr[0]]||{}).feedW)||0;feedCumByDay[nr[0]]=runFeed;});
+
+  sortedCtrl.forEach(d=>{
+    const dd=state.days[d];
+    const w=dd?.ctrlWeight?parseInt(dd.ctrlWeight):(dd?.weight?parseInt(dd.weight):0);
+    if(w>0){
+      ctrlPoints.push({d,weight:w,cumFeed:feedCumByDay[d]||0});
+    }
+  });
+
+  // Calculate FCR between consecutive ctrl points
+  const weeklyFCR=[];
+  for(let i=1;i<ctrlPoints.length;i++){
+    const prev=ctrlPoints[i-1],cur=ctrlPoints[i];
+    // Mortality between these two points
+    let mortBetween=0;
+    for(let d=prev.d+1;d<=cur.d;d++){mortBetween+=parseInt((state.days[d]||{}).mort)||0;}
+    // Approximate flock size in period (use start flock minus cumulative mort up to prev.d)
+    let cumMortToPrev=0;
+    for(let d=0;d<=prev.d;d++){cumMortToPrev+=parseInt((state.days[d]||{}).mort)||0;}
+    const flockAtPrev=Math.max(fl-cumMortToPrev,1);
+    const flockAtCur=Math.max(flockAtPrev-mortBetween,1);
+    const avgFlock=(flockAtPrev+flockAtCur)/2;
+    const gainKg=(cur.weight-prev.weight)*avgFlock/1000;
+    const feedConsumed=(cur.cumFeed-prev.cumFeed);
+    const fcr=gainKg>0?feedConsumed/gainKg:null;
+    if(fcr!==null&&fcr>0&&fcr<10){
+      weeklyFCR.push({label:`Д${prev.d}→${cur.d}`,fcr:+fcr.toFixed(3),day:cur.d});
+    }
+  }
+
+  // Overall FCR from start to last ctrl point
+  let overallFCR=null;
+  if(ctrlPoints.length>=2&&totFeed>0){
+    const first=ctrlPoints[0],last=ctrlPoints[ctrlPoints.length-1];
+    const endFlock=Math.max(fl-totMort,1);
+    const gainKg=(last.weight*endFlock - (first.weight||42)*fl)/1000;
+    if(gainKg>0)overallFCR=totFeed/gainKg;
+  }
+
+  // Render stats cards
+  let grade='—',cls='',grHtml='';
+  if(overallFCR!==null){
+    if(overallFCR<1.75){grade='Відмінно';cls='color:var(--green)';}
+    else if(overallFCR<1.90){grade='Добре';cls='color:var(--blue)';}
+    else if(overallFCR<2.10){grade='Задовільно';cls='color:var(--accent)';}
+    else{grade='Потребує уваги';cls='color:var(--red)';}
+    grHtml=`<span style="${cls};font-size:.78rem;font-weight:600">${grade}</span>`;
+  }
+  const lastCtrlW=ctrlPoints.length?ctrlPoints[ctrlPoints.length-1].weight:0;
+  const endFlock=Math.max(fl-totMort,1);
+  const avgW=lastCtrlW?lastCtrlW:0;
+  const adgDays=ctrlPoints.length?ctrlPoints[ctrlPoints.length-1].d:0;
+  const adg=adgDays>0&&avgW>0&&fl>0?((avgW*endFlock/1000)/endFlock*1000/adgDays).toFixed(1):'—';
+
+  statsEl.innerHTML=`
+    <div class="summary-item"><div class="s-label">FCR (загальний)</div>
+      <div class="s-val" style="${cls};font-size:1.4rem">${overallFCR!==null?overallFCR.toFixed(3):'—'}</div>
+      <div class="s-norm">${grHtml}</div></div>
+    <div class="summary-item"><div class="s-label">Корм витрачено</div>
+      <div class="s-val">${totFeed.toFixed(0)} кг</div>
+      <div class="s-norm">${(totFeed/1000).toFixed(3)} т</div></div>
+    <div class="summary-item"><div class="s-label">Остання маса</div>
+      <div class="s-val">${avgW>0?avgW+' г':'—'}</div>
+      <div class="s-norm">день ${adgDays||'—'}</div></div>
+    <div class="summary-item"><div class="s-label">СДП г/день</div>
+      <div class="s-val">${adg}</div>
+      <div class="s-norm">середньодобовий приріст</div></div>
+  `;
+
+  // Weekly FCR chart
+  if(weeklyFCR.length>=2){
+    chartWrap.style.display='';
+    const ctx=document.getElementById('chartFCR').getContext('2d');
+    if(chartFCR)chartFCR.destroy();
+    // benchmark line at 1.75
+    const benchData=weeklyFCR.map(()=>1.75);
+    chartFCR=new Chart(ctx,{type:'bar',data:{
+      labels:weeklyFCR.map(p=>p.label),
+      datasets:[
+        {label:'FCR',data:weeklyFCR.map(p=>p.fcr),backgroundColor:weeklyFCR.map(p=>p.fcr<1.75?'rgba(39,201,106,.5)':p.fcr<1.90?'rgba(74,179,244,.5)':'rgba(240,72,58,.5)'),borderColor:weeklyFCR.map(p=>p.fcr<1.75?'#27c96a':p.fcr<1.90?'#4ab3f4':'#f0483a'),borderWidth:1.5,borderRadius:3},
+        {label:'Ціль 1.75',data:benchData,type:'line',borderColor:'rgba(245,166,35,.6)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false},
+      ]
+    },options:{...cOpts(),plugins:{legend:{labels:{color:'#8baabf',font:{size:10}}}}}});
+  }else{
+    chartWrap.style.display='none';
+  }
+}
+
+// ══ CHARTS ══
+let chartW,chartWater,chartNormLine;
+function cOpts(){return{responsive:true,animation:{duration:400},plugins:{legend:{labels:{color:'#8baabf',font:{size:10}}}},scales:{x:{ticks:{color:'#6b82a8',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#6b82a8',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}}};}
+function drawWeightChart(){
+  const days=NORMS.map(r=>r[0]),normW=NORMS.map(r=>r[2]);
+  const factW=days.map(d=>{const dd=state.days[d];return dd?.weight?parseInt(dd.weight):null});
+  const ctrlW=days.map(d=>{const dd=state.days[d];return(CTRL_DAYS.has(d)&&dd?.ctrlWeight)?parseInt(dd.ctrlWeight):null});
+  const ctx=document.getElementById('chartWeight').getContext('2d');
+  if(chartW)chartW.destroy();
+  chartW=new Chart(ctx,{type:'line',data:{labels:days,datasets:[
+    {label:'Норма',data:normW,borderColor:'#4ab3f4',borderWidth:1.5,pointRadius:0,tension:.4,fill:false},
+    {label:'Факт', data:factW,borderColor:'#f5a623',borderWidth:2,pointRadius:2,tension:.3,fill:false,spanGaps:true},
+    {label:'Контроль',data:ctrlW,borderColor:'#27c96a',borderWidth:0,pointRadius:6,pointStyle:'rectRot',fill:false,spanGaps:false},
+  ]},options:cOpts()});
+}
+function drawWaterChart(){
+  // Show water consumption in liters per day (from meter)
+  const days=NORMS.map(r=>r[0]);
+  const wL=days.map(d=>getWaterConsumedL(d));
+  const ctx=document.getElementById('chartWater').getContext('2d');
+  if(chartWater)chartWater.destroy();
+  chartWater=new Chart(ctx,{type:'bar',data:{labels:days,datasets:[
+    {label:'Спожито л/добу',data:wL,backgroundColor:'rgba(74,179,244,.35)',borderColor:'#4ab3f4',borderWidth:1},
+  ]},options:{...cOpts(),plugins:{legend:{labels:{color:'#8baabf',font:{size:10}}}}}});
+}
+function drawNormChart(){
+  const ctx=document.getElementById('chartNorm').getContext('2d');
+  if(chartNormLine)chartNormLine.destroy();
+  chartNormLine=new Chart(ctx,{type:'line',data:{labels:NORMS.map(r=>r[0]),datasets:[{label:'Норма ваги (г)',data:NORMS.map(r=>r[2]),borderColor:'#f5a623',backgroundColor:'rgba(245,166,35,.1)',borderWidth:2,pointRadius:0,tension:.4,fill:true}]},options:cOpts()});
+}
+
+// ══ DAILY ══
+function buildFeedTypeSelect(){
+  const sel=document.getElementById('e_feed_type');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— оберіть —</option>';
+  getAllVariantKeys().forEach(k=>{
+    const o=document.createElement('option');
+    o.value=k;o.textContent=getFeedLabel(k);
+    sel.appendChild(o);
+  });
+  if(cur)sel.value=cur;
+}
+function buildDaySelect(){
+  const sel=document.getElementById('daySelect');
+  const prev=parseInt(sel.value);
+  const target=isNaN(prev)?currentDay():prev;
+  sel.innerHTML='';
+  for(let d=0;d<=56;d++){
+    const o=document.createElement('option');
+    o.value=d;
+    o.textContent=`День ${String(d).padStart(2,' ')}  (тиж.${weekOf(d)})${CTRL_DAYS.has(d)?' ⚖️':''}`;
+    sel.appendChild(o);
+  }
+  sel.value=Math.min(target,56);
+  loadDayForm();
+}
+function stepDay(delta){
+  const sel=document.getElementById('daySelect');
+  const cur=parseInt(sel.value)||0;
+  const next=Math.max(0,Math.min(56,cur+delta));
+  sel.value=next;
+  loadDayForm();
+}
+function suggestFeed(d){return d<=7?'prestart':d<=21?'starter':d<=35?'grower':'finisher'}
+function onFeedTypeChange(){
+  const d=parseInt(document.getElementById('daySelect').value);
+  const t=document.getElementById('e_feed_type').value;
+  const hint=document.getElementById('nh_feed');
+  const base=getBaseType(t);
+  const recs={prestart:'0–7',starter:'8–21',grower:'22–35',finisher:'36+'};
+  const isOk=base==='prestart'?d<=7:base==='starter'?d>=8&&d<=21:base==='grower'?d>=22&&d<=35:base==='finisher'?d>=36:true;
+  hint.textContent=t?`Рекомендовані дні: ${recs[base]||'?'}`:'';
+  hint.className='norm-hint '+(t?(isOk?'ok':'over'):'');
+}
+function syncCtrlWeight(){
+  const v=document.getElementById('e_ctrl_weight').value;
+  if(v)document.getElementById('e_weight').value=v;
+  updateNormHints();
+}
+function loadDayForm(){
+  const d=parseInt(document.getElementById('daySelect').value);
+  document.getElementById('weekLabel').textContent=`${weekOf(d)}-й тиждень`;
+  const dd=state.days[d]||{};
+  document.getElementById('e_mort').value       =dd.mort!==undefined?dd.mort:'';
+  const suggestedFeed=dd.feedType!==undefined?dd.feedType:suggestFeed(d);
+  document.getElementById('e_feed_type').value  =suggestedFeed;
+  document.getElementById('e_feed_w').value     =dd.feedW!==undefined?dd.feedW:'';
+  document.getElementById('e_water_meter').value=dd.waterMeter!==undefined?dd.waterMeter:'';
+  document.getElementById('e_weight').value     =dd.weight!==undefined?dd.weight:'';
+  document.getElementById('e_temp8').value      =dd.temp8!==undefined?dd.temp8:'';
+  document.getElementById('e_temp18').value     =dd.temp18!==undefined?dd.temp18:'';
+  document.getElementById('e_note').value       =dd.note!==undefined?dd.note:'';
+
+  // water meter hint — show consumption if prev reading exists
+  const wL=getWaterConsumedL(d);
+  const mHint=document.getElementById('nh_meter');
+  if(wL!==null){
+    const fl=state.flock||0;
+    const perHead=fl>0?(wL*1000/fl).toFixed(0)+' мл/гол':'';
+    mHint.textContent=`Спожито: ${wL.toFixed(0)} л${perHead?' | '+perHead:''}`;
+    mHint.className='norm-hint ok';
+  }else{
+    const norm=getNorm(d);
+    if(norm&&norm[1]){mHint.textContent=`Норма: ${norm[1]} мл/гол`;mHint.className='norm-hint';}
+    else mHint.textContent='';
+  }
+
+  const isCtrl=CTRL_DAYS.has(d);
+  document.getElementById('ctrlWeighBanner').style.display=isCtrl?'block':'none';
+  document.getElementById('field_ctrl_weight').style.display=isCtrl?'':'none';
+  if(isCtrl){
+    document.getElementById('e_ctrl_weight').value=dd.ctrlWeight||dd.weight||'';
+    const norm=getNorm(d);
+    const hint=document.getElementById('nh_ctrl');
+    const cv=dd.ctrlWeight||dd.weight||'';
+    if(norm&&norm[2]&&cv){const diff=parseInt(cv)-norm[2];hint.textContent=`Норма: ${norm[2]} г | Δ: ${diff>0?'+':''}${diff}`;hint.className='norm-hint '+(diff<-50?'over':'ok');}
+    else if(norm&&norm[2]){hint.textContent=`Норма: ${norm[2]} г`;hint.className='norm-hint';}
+  }
+  updateNormHints();onFeedTypeChange();
+  document.getElementById('summaryTitle').style.display='none';
+  document.getElementById('summaryGrid').style.display='none';
+}
+function updateNormHints(){
+  const d=parseInt(document.getElementById('daySelect').value);
+  const norm=getNorm(d);if(!norm)return;
+  const gwEl=document.getElementById('nh_weight');
+  const gFact=parseInt(document.getElementById('e_weight').value)||0;
+  if(norm[2]&&gFact){const diff=gFact-norm[2];gwEl.textContent=`Норма: ${norm[2]} г | Δ: ${diff>0?'+':''}${diff}`;gwEl.className='norm-hint '+(diff<-50?'over':'ok');}
+  else if(norm[2]){gwEl.textContent=`Норма: ${norm[2]} г`;gwEl.className='norm-hint';}
+  const tEl=document.getElementById('nh_temp');
+  if(norm[3]){tEl.textContent=`Норма темп: ${norm[3]} °C`;tEl.className='norm-hint';}
+}
+function saveDayData(){
+  const d=parseInt(document.getElementById('daySelect').value);
+  const isCtrl=CTRL_DAYS.has(d);
+  const ctrlVal=isCtrl?document.getElementById('e_ctrl_weight').value:'';
+  let wVal=document.getElementById('e_weight').value;
+  if(!wVal&&ctrlVal)wVal=ctrlVal;
+  state.days[d]={
+    mort:       document.getElementById('e_mort').value,
+    feedType:   document.getElementById('e_feed_type').value,
+    feedW:      document.getElementById('e_feed_w').value,
+    waterMeter: document.getElementById('e_water_meter').value,
+    weight:     wVal,
+    ctrlWeight: ctrlVal,
+    temp8:      document.getElementById('e_temp8').value,
+    temp18:     document.getElementById('e_temp18').value,
+    note:       document.getElementById('e_note').value,
+  };
+  saveState();showToast(`День ${d} збережено ✓`);
+  // Refresh meter hint after save
+  const wL=getWaterConsumedL(d);
+  const mHint=document.getElementById('nh_meter');
+  if(wL!==null){
+    const fl=state.flock||0;
+    const perHead=fl>0?(wL*1000/fl).toFixed(0)+' мл/гол':'';
+    mHint.textContent=`Спожито: ${wL.toFixed(0)} л${perHead?' | '+perHead:''}`;
+    mHint.className='norm-hint ok';
+  }
+  showDaySummary(d);updateNormHints();
+}
+function showDaySummary(d){
+  const dd=state.days[d];if(!dd)return;
+  const norm=getNorm(d);
+  const wL=getWaterConsumedL(d);
+  const fl=state.flock||0;
+  const grid=document.getElementById('summaryGrid');grid.innerHTML='';
+  const items=[['День',d,''],['Падіж',dd.mort||'0','гол.'],
+   ['Вага',dd.weight||'—',`г (н: ${norm?norm[2]:'—'})`],
+   ['Вода спожито',wL!==null?wL.toFixed(0)+'л':'—',wL&&fl>0?(wL*1000/fl).toFixed(0)+' мл/гол':''],
+   ['Лічильник',dd.waterMeter||'—','м³'],
+   ['Темп 8:00',dd.temp8||'—','°C'],['Темп 18:00',dd.temp18||'—','°C'],
+   ['Корм',dd.feedW||'—','кг'],
+  ];
+  if(CTRL_DAYS.has(d))items.push(['⚖️ Контроль',dd.ctrlWeight||'—','г']);
+  items.forEach(([l,v,n])=>{
+    grid.innerHTML+=`<div class="summary-item"><div class="s-label">${l}</div><div class="s-val">${v}</div><div class="s-norm">${n}</div></div>`;
+  });
+  document.getElementById('summaryTitle').style.display='';
+  document.getElementById('summaryGrid').style.display='grid';
+}
+
+// ══ TABLE ══
+function buildCumMort(){
+  const cum={};let r=0;
+  NORMS.forEach(nr=>{r+=parseInt((state.days[nr[0]]||{}).mort)||0;cum[nr[0]]=r;});
+  return cum;
+}
+function buildWeekMort(){
+  const wm={};
+  NORMS.forEach(nr=>{const w=nr[4],m=parseInt((state.days[nr[0]]||{}).mort)||0;wm[w]=(wm[w]||0)+m;});
+  return wm;
+}
+function buildTable(){
+  const tbody=document.getElementById('tableBody');tbody.innerHTML='';
+  const filterWeek=parseInt(document.getElementById('filterWeek').value)||0;
+  const onlyFilled=document.getElementById('showOnlyFilled').checked;
+  const fl=state.flock||0;
+  const cumByDay=buildCumMort();
+  const weekMortMap=buildWeekMort();
+  let prevWeek=null;
+
+  NORMS.forEach(normRow=>{
+    const d=normRow[0],w=normRow[4];
+    const dd=state.days[d]||{};
+    const hasFact=!!(dd.weight||dd.waterMeter||dd.mort||dd.feedType||dd.temp8||dd.ctrlWeight);
+    const isCtrl=CTRL_DAYS.has(d);
+    const mortDay=parseInt(dd.mort)||0;
+
+    if(prevWeek!==null&&w!==prevWeek){
+      if(filterWeek===0||filterWeek===prevWeek){
+        const wtr=document.createElement('tr');wtr.className='week-total';
+        wtr.innerHTML=`<td colspan="17" style="text-align:left;padding:5px 10px">📅 Тиждень ${prevWeek} — падіж: <strong>${weekMortMap[prevWeek]||0}</strong> гол.</td>`;
+        tbody.appendChild(wtr);
+      }
+    }
+    prevWeek=w;
+    if(filterWeek>0&&w!==filterWeek)return;
+    if(onlyFilled&&!hasFact)return;
+
+    const cum=cumByDay[d];
+    const pct=fl>0?(cum/fl*100).toFixed(2):'—';
+    const pctHigh=fl>0&&parseFloat(pct)>5;
+    const normW=normRow[2];
+    const factW=dd.weight?parseInt(dd.weight):null;
+    const delta=factW!==null?factW-normW:null;
+    const dHtml=delta!==null?`<span class="delta ${delta>=0?'pos':'neg'}">${delta>0?'+':''}${delta}</span>`:'';
+
+    const ctrlVal=isCtrl&&dd.ctrlWeight?dd.ctrlWeight:'';
+    const ctrlNorm=isCtrl&&normRow[2]&&ctrlVal?parseInt(ctrlVal)-normRow[2]:null;
+    const ctrlHtml=isCtrl
+      ?(ctrlVal?`<span class="ctrl-weigh-cell">${ctrlVal}</span>${ctrlNorm!==null?`<span class="delta ${ctrlNorm>=0?'pos':'neg'}">${ctrlNorm>0?'+':''}${ctrlNorm}</span>`:''}`:
+        '<span style="color:rgba(245,166,35,.35)">⚖️</span>')
+      :'<span style="color:var(--dim)">—</span>';
+
+    // Water from meter
+    const wL=getWaterConsumedL(d);
+    const wlStr=wL!==null?wL.toFixed(0):'<span style="color:var(--dim)">—</span>';
+    const wPerHead=wL!==null&&fl>0?`<span style="color:#9fb8d0;font-size:.68rem">${(wL*1000/fl).toFixed(0)}</span>`:'<span style="color:var(--dim)">—</span>';
+    const meterStr=dd.waterMeter?`<span class="water-meter">${parseFloat(dd.waterMeter).toFixed(3)}</span>`:'<span style="color:var(--dim)">—</span>';
+
+    const tr=document.createElement('tr');
+    if(hasFact)tr.classList.add('has-data');
+    if(d>0&&d%7===0)tr.classList.add('week-sep');
+    if(isCtrl)tr.classList.add('ctrl-row');
+
+    tr.innerHTML=`
+      <td class="day-col">${d}${isCtrl?'<span class="ctrl-icon"> ⚖️</span>':''}</td>
+      <td class="week-col">Т${w}</td>
+      <td>${mortDay?`<span class="mort-badge">${mortDay}</span>`:dim('')}</td>
+      <td><span class="cum-num">${cum}</span></td>
+      <td><span class="pct-badge${pctHigh?' high':''}">${pct==='—'?'—':pct+'%'}</span></td>
+      <td class="norm-col">${normW}</td>
+      <td class="fact-col">${factW!==null?factW:dim('')}${dHtml}</td>
+      <td style="text-align:center">${ctrlHtml}</td>
+      <td>${meterStr}</td>
+      <td class="water-cons">${wlStr}</td>
+      <td>${wPerHead}</td>
+      <td class="temp-cell">${dd.temp8||dim('')}</td>
+      <td class="temp-cell">${dd.temp18||dim('')}</td>
+      <td>${feedPill(dd.feedType)}</td>
+      <td style="font-family:var(--mono);color:#d8e6f8;font-size:.75rem">${dd.feedW||dim('')}</td>
+      <td class="note-cell" title="${dd.note||''}">${dd.note||''}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  if(prevWeek!==null&&(filterWeek===0||filterWeek===prevWeek)){
+    const wtr=document.createElement('tr');wtr.className='week-total';
+    wtr.innerHTML=`<td colspan="17" style="text-align:left;padding:5px 10px">📅 Тиждень ${prevWeek} — падіж: <strong>${weekMortMap[prevWeek]||0}</strong> гол.</td>`;
+    tbody.appendChild(wtr);
+  }
+}
+
+// ══ NORMS TABLE ══
+function buildNormsTable(){
+  const tbody=document.getElementById('normsBody');tbody.innerHTML='';
+  NORMS.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r[4]}</td><td>${r[0]}${CTRL_DAYS.has(r[0])?' ⚖️':''}</td><td>${r[1]||'—'}</td><td>${r[2]}</td><td>${r[3]||'—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ══ FEED LOG ══
+function buildFeedLog(){
+  const fl=state.flock||0;
+  const tbody=document.getElementById('fcBody');tbody.innerHTML='';
+  let cumKg=0;
+  const byType={};
+  const rows=[];
+  NORMS.forEach(nr=>{
+    const d=nr[0],w=nr[4];
+    const dd=state.days[d]||{};
+    const kg=parseFloat(dd.feedW)||0;
+    cumKg+=kg;
+    if(dd.feedType){byType[dd.feedType]=(byType[dd.feedType]||0)+kg;}
+    if(kg>0||dd.feedType)rows.push({d,w,dd,kg,cumKg});
+  });
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="7" style="color:var(--muted);padding:20px;text-align:center">Даних про корм ще немає</td></tr>`;
+  }else{
+    rows.forEach(({d,w,dd,kg,cumKg:ck})=>{
+      const ph=fl>0&&kg>0?(kg*1000/fl).toFixed(0):'—';
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class="fc-day">${d}</td><td style="color:var(--muted);font-size:.73rem">Т${w}</td><td>${feedPill(dd.feedType)}</td><td class="fc-kg">${kg>0?kg.toFixed(1):dim('')}</td><td class="fc-cum">${ck.toFixed(1)}</td><td style="color:#c4d8f0;font-family:var(--mono)">${ph}</td><td class="note-cell">${dd.note||''}</td>`;
+      tbody.appendChild(tr);
+    });
+    const ttr=document.createElement('tr');ttr.className='fc-total';
+    ttr.innerHTML=`<td colspan="3">РАЗОМ</td><td class="fc-kg">${cumKg.toFixed(1)} кг</td><td class="fc-cum">${cumKg.toFixed(1)}</td><td></td><td></td>`;
+    tbody.appendChild(ttr);
+  }
+  // stats
+  const statsEl=document.getElementById('feedLogStats');
+  const totalT=(cumKg/1000).toFixed(3);
+  const phTotal=fl>0?(cumKg/fl).toFixed(2):'—';
+  let statsHtml=`
+    <div class="summary-item"><div class="s-label">Всього спожито</div><div class="s-val">${cumKg.toFixed(0)} кг</div><div class="s-norm">${totalT} т</div></div>
+    <div class="summary-item"><div class="s-label">На голову</div><div class="s-val">${phTotal} кг</div><div class="s-norm">за весь період</div></div>`;
+  Object.entries(byType).forEach(([k,v])=>{
+    statsHtml+=`<div class="summary-item"><div class="s-label">${getFeedLabel(k)}</div><div class="s-val">${v.toFixed(1)} кг</div></div>`;
+  });
+  statsEl.innerHTML=statsHtml;
+}
+
+// ══ FCR ══
+function initFCR(){
+  // pre-fill from partition data if available
+  autoFillFCR(true);
+}
+function autoFillFCR(silent){
+  const fl=state.flock||0;
+  let totFeed=0,totMort=0;
+  NORMS.forEach(nr=>{
+    const dd=state.days[nr[0]]||{};
+    totFeed+=parseFloat(dd.feedW)||0;
+    totMort+=parseInt(dd.mort)||0;
+  });
+  const endFlock=Math.max(fl-totMort,1);
+  // Find last ctrl weight (prefer ctrlWeight over weight on ctrl days)
+  let lastCtrlW=0;
+  const sortedCtrlDesc=Array.from(CTRL_DAYS).sort((a,b)=>b-a);
+  for(const d of sortedCtrlDesc){
+    const dd=state.days[d];
+    if(dd?.ctrlWeight&&parseInt(dd.ctrlWeight)>0){lastCtrlW=parseInt(dd.ctrlWeight);break;}
+    if(dd?.weight&&parseInt(dd.weight)>0){lastCtrlW=parseInt(dd.weight);break;}
+  }
+  // Also try last non-ctrl day weight if still 0
+  if(!lastCtrlW){
+    for(let d=56;d>=0;d--){
+      const dd=state.days[d];
+      if(dd?.weight&&parseInt(dd.weight)>0){lastCtrlW=parseInt(dd.weight);break;}
+    }
+  }
+  // Start weight from day 0
+  const d0=state.days[0];
+  const startW=d0?.ctrlWeight?parseInt(d0.ctrlWeight):(d0?.weight?parseInt(d0.weight):42);
+  if(fl>0)document.getElementById('fcr_start_flock').value=fl;
+  if(endFlock>0)document.getElementById('fcr_end_flock').value=endFlock;
+  if(totFeed>0)document.getElementById('fcr_feed').value=totFeed.toFixed(1);
+  if(lastCtrlW>0)document.getElementById('fcr_end_mass').value=(lastCtrlW*endFlock/1000).toFixed(1);
+  document.getElementById('fcr_start_mass').value=(startW*fl/1000).toFixed(1);
+  document.getElementById('fcr_days').value=state.slDay||42;
+  if(!silent)showToast('Дані заповнено з партії ✓');
+  calcFCR();
+}
+function calcFCR(){
+  const feed=parseFloat(document.getElementById('fcr_feed').value)||0;
+  const startMass=parseFloat(document.getElementById('fcr_start_mass').value)||0;
+  const endMass=parseFloat(document.getElementById('fcr_end_mass').value)||0;
+  const startFlock=parseInt(document.getElementById('fcr_start_flock').value)||0;
+  const endFlock=parseInt(document.getElementById('fcr_end_flock').value)||0;
+  const days=parseInt(document.getElementById('fcr_days').value)||42;
+  const gain=endMass-startMass;
+  if(feed<=0||gain<=0){document.getElementById('fcrResult').style.display='none';return;}
+  const fcr=feed/gain;
+  document.getElementById('fcrResult').style.display='block';
+  document.getElementById('fcrValue').textContent=fcr.toFixed(3);
+  // grade
+  let grade,cls;
+  if(fcr<1.75){grade='Відмінно';cls='excellent';}
+  else if(fcr<1.90){grade='Добре';cls='good';}
+  else if(fcr<2.10){grade='Задовільно';cls='average';}
+  else{grade='Потребує уваги';cls='poor';}
+  const grEl=document.getElementById('fcrGrade');
+  grEl.textContent=grade;grEl.className='fcr-grade '+cls;
+  // breakdown
+  const mortality=startFlock>0?((startFlock-endFlock)/startFlock*100).toFixed(1)+'%':'—';
+  const adg=days>0&&endFlock>0?((endMass-startMass)*1000/endFlock/days).toFixed(1):'—';
+  const avgW=endFlock>0?(endMass*1000/endFlock).toFixed(0):'—';
+  const feedPerHead=endFlock>0?(feed/endFlock).toFixed(2):'—';
+  const ep=startFlock>0&&endMass>0?((endFlock/startFlock*100)*parseFloat(avgW||0)/1000/fcr).toFixed(1):'—';
+  document.getElementById('fcrBreakdown').innerHTML=`
+    <div class="fcr-b-item"><div class="bv">${gain.toFixed(1)} кг</div><div class="bl">Приріст</div></div>
+    <div class="fcr-b-item"><div class="bv">${avgW} г</div><div class="bl">Сер. маса</div></div>
+    <div class="fcr-b-item"><div class="bv">${adg} г/д</div><div class="bl">СДП</div></div>
+    <div class="fcr-b-item"><div class="bv">${mortality}</div><div class="bl">Загибель</div></div>
+    <div class="fcr-b-item"><div class="bv">${feedPerHead} кг</div><div class="bl">Корм/гол</div></div>
+  `;
+}
+
+// ══ FEED RECIPES UI ══
+let activeFeedBase='prestart';
+let activeFeedVariant=1;
+
+function renderFeedRecipesUI(){
+  // Type tabs
+  const tabsEl=document.getElementById('feedTypeTabs');
+  tabsEl.innerHTML='';
+  FEED_BASE_TYPES.forEach(bt=>{
+    const btn=document.createElement('button');
+    btn.className='ftt-btn'+(bt.key===activeFeedBase?' active':'');
+    btn.textContent=bt.label;
+    btn.onclick=()=>{activeFeedBase=bt.key;activeFeedVariant=1;renderFeedRecipesUI();};
+    tabsEl.appendChild(btn);
+  });
+
+  const bt=FEED_BASE_TYPES.find(b=>b.key===activeFeedBase);
+  const numVariants=state.feedVariants[activeFeedBase]||1;
+  const area=document.getElementById('feedRecipeArea');
+  area.innerHTML='';
+
+  // Variant tabs
+  const vtDiv=document.createElement('div');vtDiv.className='variant-tabs';
+  for(let i=1;i<=numVariants;i++){
+    const vk=makeVariantKey(activeFeedBase,i);
+    const vb=document.createElement('button');
+    vb.className='var-btn'+(i===activeFeedVariant?' active':'');
+    vb.textContent=getFeedLabel(vk);
+    vb.onclick=()=>{activeFeedVariant=i;renderFeedRecipesUI();};
+    vtDiv.appendChild(vb);
+  }
+  // Add variant btn (max 3)
+  if(numVariants<3){
+    const ab=document.createElement('button');ab.className='add-var-btn';
+    ab.textContent='+ Новий варіант';
+    ab.onclick=()=>{
+      state.feedVariants[activeFeedBase]=(state.feedVariants[activeFeedBase]||1)+1;
+      const newN=state.feedVariants[activeFeedBase];
+      const newKey=makeVariantKey(activeFeedBase,newN);
+      ensureRecipe(newKey);
+      activeFeedVariant=newN;
+      saveState();renderFeedRecipesUI();
+      // rebuild feed type select in daily
+      buildFeedTypeSelect();
+    };
+    vtDiv.appendChild(ab);
+  }
+  // Delete variant btn (if >1 variants and currently viewing variant > 1)
+  if(numVariants>1&&activeFeedVariant>1){
+    const delBase=activeFeedBase;
+    const delVar=activeFeedVariant;
+    const db=document.createElement('button');db.className='del-var-btn';
+    db.textContent='✕ Видалити цей варіант';
+    db.addEventListener('click',function(){
+      const delKey=makeVariantKey(delBase,delVar);
+      if(!confirm(`Видалити "${getFeedLabel(delKey)}"?`))return;
+      // Remove recipe
+      delete state.feedRecipes[delKey];
+      // If we deleted a middle variant, shift higher variants down
+      const total=state.feedVariants[delBase]||1;
+      for(let i=delVar;i<total;i++){
+        const fromKey=makeVariantKey(delBase,i+1);
+        const toKey=makeVariantKey(delBase,i);
+        if(state.feedRecipes[fromKey]){
+          state.feedRecipes[toKey]=state.feedRecipes[fromKey];
+          delete state.feedRecipes[fromKey];
+        }
+      }
+      state.feedVariants[delBase]=Math.max(1,total-1);
+      activeFeedVariant=Math.min(delVar,state.feedVariants[delBase]);
+      saveState();renderFeedRecipesUI();buildFeedTypeSelect();
+    });
+    vtDiv.appendChild(db);
+  }
+  area.appendChild(vtDiv);
+
+  // Recipe card
+  const curKey=makeVariantKey(activeFeedBase,activeFeedVariant);
+  ensureRecipe(curKey);
+  const recipe=state.feedRecipes[curKey];
+
+  const card=document.createElement('div');
+  card.className='feed-card active';
+  card.innerHTML=`
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <span class="feed-badge ${curKey}">${getFeedLabel(curKey)}</span>
+        <div class="feed-days">Рекомендовані дні: ${bt?bt.days:'?'}</div>
+      </div>
+    </div>
+    <div id="ingr-area"></div>
+    <div class="feed-total-box">
+      <span class="tot-lbl">Загальна вага</span>
+      <span><span class="tot-val" id="tv-cur">0.000</span> <span style="color:var(--muted);font-size:.8rem">/ 5.000 т</span></span>
+    </div>
+  `;
+  area.appendChild(card);
+
+  // Ingredients table
+  const tbl=document.createElement('table');tbl.className='ingr-table';
+  tbl.innerHTML=`<thead><tr><th>Інгредієнт</th><th>Кількість, т</th></tr></thead>`;
+  const tb=document.createElement('tbody');
+  FEED_INGREDIENTS.forEach(ing=>{
+    const val=(recipe[ing]||0).toFixed(3);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${ing}</td><td><input class="ingr-inp" type="number" step="0.001" min="0" max="5" value="${val}" oninput="onIngrInput('${curKey}','${ing}',this.value)"><div class="ingr-unit">тонн</div></td>`;
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb);
+  card.querySelector('#ingr-area').appendChild(tbl);
+  updateFeedTotal(curKey);
+
+  const btnWrap=document.createElement('div');
+  btnWrap.innerHTML=`
+    <button class="save-btn" onclick="saveFeedRecipe('${curKey}')">💾 ЗБЕРЕГТИ ${getFeedLabel(curKey).toUpperCase()}</button>
+    <button class="save-btn secondary" style="margin-top:6px" onclick="resetFeedRecipe('${curKey}')">↺ Скинути до стандарту</button>
+  `;
+  area.appendChild(btnWrap);
+}
+
+function onIngrInput(key,ing,val){
+  ensureRecipe(key);
+  state.feedRecipes[key][ing]=parseFloat(val)||0;
+  updateFeedTotal(key);
+}
+function updateFeedTotal(key){
+  const recipe=state.feedRecipes[key]||{};
+  const total=FEED_INGREDIENTS.reduce((s,i)=>s+(parseFloat(recipe[i])||0),0);
+  const el=document.getElementById('tv-cur');
+  if(el){el.textContent=total.toFixed(3);const d=Math.abs(total-TARGET_TONS);el.className='tot-val '+(d<0.005?'ok':d<0.1?'neutral':'warn');}
+}
+function saveFeedRecipe(key){saveState();showToast(getFeedLabel(key)+' збережено ✓')}
+function resetFeedRecipe(key){
+  if(!confirm(`Скинути "${getFeedLabel(key)}" до стандарту?`))return;
+  state.feedRecipes[key]=getDefaultRecipeForKey(key);
+  saveState();renderFeedRecipesUI();showToast('Скинуто до стандарту');
+}
+
+// ══ EXPORT ══
+function exportCSV(){
+  const cumByDay=buildCumMort();
+  const fl=state.flock||0;
+  let csv='Тиждень,День,КонтрЗваж,Падіж,Нарост. падіж,% падіж,Лічильник (м³),Спожито (л),мл/гол,Вага норма (г),Вага факт (г),Δ Вага,Контр.вага (г),Темп 8:00,Темп 18:00,Корм,кг корму,Примітки\n';
+  NORMS.forEach(r=>{
+    const dd=state.days[r[0]]||{};
+    const m=parseInt(dd.mort)||0;
+    const cum=cumByDay[r[0]];
+    const pct=fl>0?(cum/fl*100).toFixed(2):'';
+    const delta=dd.weight?parseInt(dd.weight)-r[2]:'';
+    const wL=getWaterConsumedL(r[0]);
+    const wlStr=wL!==null?wL.toFixed(0):'';
+    const phStr=wL!==null&&fl>0?(wL*1000/fl).toFixed(0):'';
+    const isCtrl=CTRL_DAYS.has(r[0])?'Так':'';
+    const feedLabel=dd.feedType?getFeedLabel(dd.feedType):'';
+    csv+=[r[4],r[0],isCtrl,m,cum,pct,dd.waterMeter||'',wlStr,phStr,
+      r[2],dd.weight||'',delta,dd.ctrlWeight||'',
+      dd.temp8||'',dd.temp18||'',feedLabel,dd.feedW||'',dd.note||''].join(',')+'\n';
+  });
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download=`broiler_${state.barn||'farm'}.csv`;a.click();
+}
+function exportFeedCSV(){
+  const fl=state.flock||0;let csv='День,Тиждень,Рецептура,кг/добу,Нарост. кг,г/голову\n';let cum=0;
+  NORMS.forEach(r=>{
+    const dd=state.days[r[0]]||{};const kg=parseFloat(dd.feedW)||0;cum+=kg;
+    if(kg>0||dd.feedType){
+      const ph=fl>0&&kg>0?(kg*1000/fl).toFixed(0):'';
+      csv+=[r[0],r[4],dd.feedType?getFeedLabel(dd.feedType):'',kg.toFixed(1),cum.toFixed(1),ph].join(',')+'\n';
+    }
+  });
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download=`feed_${state.barn||'farm'}.csv`;a.click();
+}
+
+// ══ PWA ══
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('installBanner').style.display='flex';});
+document.getElementById('installBtn').addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;document.getElementById('installBanner').style.display='none';});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+// ══ INIT ══
+loadState();
+getAllVariantKeys().forEach(k=>ensureRecipe(k));
+updateDashboard();
+buildDaySelect();
+buildFeedTypeSelect();
+</script>
+</body>
+</html>
